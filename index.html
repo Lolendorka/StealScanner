@@ -1,0 +1,980 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GTA SA — Threat Scanner</title>
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root{
+  --bg:#07090f;
+  --surface:#0d1117;
+  --card:#111827;
+  --card2:#161f2e;
+  --border:#1f2d42;
+  --border2:#253347;
+  --accent:#7c6af7;
+  --accent2:#5b4ee0;
+  --accent-glow:rgba(124,106,247,0.18);
+  --accent-glow2:rgba(124,106,247,0.08);
+  --danger:#ff4060;
+  --danger-dim:#c0203a;
+  --danger-glow:rgba(255,64,96,0.2);
+  --warning:#ffaa00;
+  --warning-glow:rgba(255,170,0,0.18);
+  --success:#22d37a;
+  --success-glow:rgba(34,211,122,0.18);
+  --text:#e2e8f7;
+  --text2:#8ca0be;
+  --text3:#4a6080;
+  --radius:14px;
+  --radius-sm:8px;
+  --shadow:0 4px 32px rgba(0,0,0,0.5);
+  --transition:0.22s cubic-bezier(0.4,0,0.2,1);
+}
+
+html,body{height:100%;background:var(--bg);font-family:'Inter',sans-serif;color:var(--text);overflow-x:hidden}
+
+body::before{
+  content:'';position:fixed;inset:0;
+  background:radial-gradient(ellipse 80% 60% at 50% -10%,rgba(124,106,247,0.12) 0%,transparent 70%);
+  pointer-events:none;z-index:0
+}
+
+#app{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;position:relative;z-index:1}
+
+/* ── SCREENS ── */
+.screen{display:none;width:100%;max-width:680px;flex-direction:column;align-items:center;gap:28px;animation:fadeUp 0.4s ease both}
+.screen.active{display:flex}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes slideIn{from{opacity:0;transform:translateX(-16px)}to{opacity:1;transform:translateX(0)}}
+@keyframes scaleIn{from{opacity:0;transform:scale(0.92)}to{opacity:1;transform:scale(1)}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes sweep{to{transform:rotate(360deg)}}
+@keyframes ring-pulse{0%{transform:scale(1);opacity:0.7}100%{transform:scale(1.9);opacity:0}}
+@keyframes ticker{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+@keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
+@keyframes bounce-dot{0%,80%,100%{transform:translateY(0)}40%{transform:translateY(-8px)}}
+@keyframes collapse{0%{max-height:200px;opacity:1;margin-bottom:12px}100%{max-height:0;opacity:0;margin-bottom:0;padding:0;border:none}}
+
+/* ── LOGO / HERO ── */
+.hero{text-align:center;display:flex;flex-direction:column;align-items:center;gap:16px}
+.logo-wrap{
+  width:88px;height:88px;border-radius:50%;
+  background:linear-gradient(135deg,var(--accent2),var(--accent));
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 0 48px var(--accent-glow),0 0 0 1px rgba(124,106,247,0.3);
+  position:relative
+}
+.logo-wrap .material-icons-round{font-size:42px;color:#fff}
+.logo-ping{
+  position:absolute;inset:-8px;border-radius:50%;
+  border:1.5px solid rgba(124,106,247,0.5);
+  animation:ring-pulse 2s ease-out infinite
+}
+.logo-ping2{animation-delay:1s}
+.hero h1{font-size:2rem;font-weight:800;letter-spacing:-0.03em;
+  background:linear-gradient(135deg,#fff 30%,var(--accent));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text
+}
+.hero p{color:var(--text2);font-size:0.96rem;line-height:1.5;max-width:420px;text-align:center}
+
+/* ── CARDS ── */
+.card{
+  width:100%;background:var(--card);border:1px solid var(--border);
+  border-radius:var(--radius);padding:24px;
+  box-shadow:0 2px 24px rgba(0,0,0,0.3)
+}
+.card-title{font-size:0.78rem;font-weight:600;text-transform:uppercase;letter-spacing:0.1em;color:var(--text3);margin-bottom:16px;display:flex;align-items:center;gap:6px}
+.card-title .material-icons-round{font-size:15px}
+
+/* ── SETTINGS ── */
+.settings-row{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.settings-label{display:flex;flex-direction:column;gap:4px}
+.settings-label span:first-child{font-weight:500;font-size:0.93rem}
+.settings-label span:last-child{font-size:0.8rem;color:var(--text2)}
+.depth-controls{display:flex;align-items:center;gap:12px}
+.num-input-wrap{position:relative;display:flex;align-items:center}
+.num-input{
+  width:90px;padding:10px 14px;
+  background:var(--card2);border:1px solid var(--border2);
+  border-radius:var(--radius-sm);color:var(--text);
+  font-family:'Inter',sans-serif;font-size:0.95rem;font-weight:600;
+  outline:none;transition:border-color var(--transition);text-align:center;
+  -moz-appearance:textfield
+}
+.num-input::-webkit-inner-spin-button,.num-input::-webkit-outer-spin-button{-webkit-appearance:none}
+.num-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-glow2)}
+.num-input:disabled{opacity:0.35;cursor:not-allowed}
+
+.toggle-inf{display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none}
+.toggle-inf input{display:none}
+.toggle-track{
+  width:42px;height:24px;border-radius:12px;
+  background:var(--card2);border:1px solid var(--border2);
+  position:relative;transition:background var(--transition),border-color var(--transition)
+}
+.toggle-thumb{
+  position:absolute;top:3px;left:3px;
+  width:16px;height:16px;border-radius:50%;
+  background:var(--text3);transition:transform var(--transition),background var(--transition)
+}
+.toggle-inf input:checked ~ .toggle-track{background:var(--accent);border-color:var(--accent)}
+.toggle-inf input:checked ~ .toggle-track .toggle-thumb{transform:translateX(18px);background:#fff}
+.toggle-inf-label{font-size:0.85rem;color:var(--text2);font-weight:500}
+
+/* ── BUTTONS ── */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  padding:13px 28px;border-radius:var(--radius-sm);border:none;
+  font-family:'Inter',sans-serif;font-size:0.93rem;font-weight:600;
+  cursor:pointer;transition:all var(--transition);position:relative;overflow:hidden;
+  user-select:none;letter-spacing:0.01em
+}
+.btn::after{content:'';position:absolute;inset:0;background:rgba(255,255,255,0);transition:background 0.15s}
+.btn:hover::after{background:rgba(255,255,255,0.07)}
+.btn:active::after{background:rgba(255,255,255,0.14)}
+.btn .material-icons-round{font-size:20px}
+
+.btn-primary{
+  background:linear-gradient(135deg,var(--accent2),var(--accent));
+  color:#fff;width:100%;padding:16px 28px;font-size:1rem;border-radius:var(--radius);
+  box-shadow:0 4px 24px var(--accent-glow);
+}
+.btn-primary:hover{box-shadow:0 6px 32px rgba(124,106,247,0.4);transform:translateY(-1px)}
+.btn-primary:active{transform:translateY(0)}
+
+.btn-ghost{background:var(--card2);border:1px solid var(--border2);color:var(--text2)}
+.btn-ghost:hover{border-color:var(--border);color:var(--text)}
+
+.btn-danger{background:var(--danger);color:#fff;box-shadow:0 2px 12px var(--danger-glow)}
+.btn-danger:hover{box-shadow:0 4px 20px rgba(255,64,96,0.4);transform:translateY(-1px)}
+.btn-danger:active{transform:translateY(0)}
+
+.btn-danger-outline{background:transparent;border:1px solid var(--danger-dim);color:var(--danger)}
+.btn-danger-outline:hover{background:var(--danger-glow);border-color:var(--danger)}
+
+.btn-success{background:var(--success);color:#031a0e;box-shadow:0 2px 12px var(--success-glow)}
+
+.btn-sm{padding:8px 16px;font-size:0.82rem;border-radius:6px}
+.btn-sm .material-icons-round{font-size:16px}
+
+.btn:disabled{opacity:0.4;cursor:not-allowed;transform:none!important;box-shadow:none!important}
+
+/* ── SCAN SCREEN ── */
+.scan-visual{display:flex;flex-direction:column;align-items:center;gap:40px;padding:20px 0}
+.radar-wrap{position:relative;width:180px;height:180px}
+.radar-circle{
+  position:absolute;inset:0;border-radius:50%;
+  border:1.5px solid rgba(124,106,247,0.25);
+}
+.radar-circle:nth-child(2){inset:22px;border-color:rgba(124,106,247,0.35)}
+.radar-circle:nth-child(3){inset:44px;border-color:rgba(124,106,247,0.5)}
+.radar-inner{
+  position:absolute;inset:66px;border-radius:50%;
+  background:var(--accent);
+  box-shadow:0 0 32px var(--accent-glow),0 0 0 6px var(--accent-glow2)
+}
+.radar-inner .material-icons-round{font-size:28px;color:#fff;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)}
+.radar-sweep{
+  position:absolute;inset:0;border-radius:50%;
+  background:conic-gradient(from 0deg,transparent 60%,rgba(124,106,247,0.35) 100%);
+  animation:sweep 2.5s linear infinite
+}
+.radar-ping{
+  position:absolute;inset:-16px;border-radius:50%;
+  border:1.5px solid rgba(124,106,247,0.4);
+  animation:ring-pulse 2.5s ease-out infinite
+}
+.radar-ping2{inset:-32px;animation-delay:0.8s}
+.radar-ping3{inset:-48px;animation-delay:1.6s}
+
+.scan-info{text-align:center;display:flex;flex-direction:column;gap:12px}
+.scan-title{font-size:1.25rem;font-weight:700;letter-spacing:-0.02em}
+.scan-subtitle{font-size:0.85rem;color:var(--text2)}
+
+/* progress bar */
+.progress-wrap{width:100%}
+.progress-label{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.progress-label span{font-size:0.8rem;color:var(--text2)}
+.progress-label strong{font-size:0.8rem;color:var(--accent);font-weight:600}
+.progress-bar-track{
+  height:6px;background:var(--card2);border-radius:3px;overflow:hidden;position:relative
+}
+.progress-bar-fill{
+  height:100%;border-radius:3px;
+  background:linear-gradient(90deg,var(--accent2),var(--accent));
+  width:0%;transition:width 0.3s ease;
+  position:relative;overflow:hidden
+}
+.progress-bar-fill::after{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,0.35),transparent);
+  background-size:200%;
+  animation:shimmer 1.5s linear infinite
+}
+
+/* file ticker */
+.file-ticker-wrap{
+  width:100%;overflow:hidden;background:var(--card2);
+  border:1px solid var(--border);border-radius:var(--radius-sm);
+  padding:10px 14px;position:relative
+}
+.file-ticker-wrap::before,.file-ticker-wrap::after{
+  content:'';position:absolute;top:0;bottom:0;width:40px;z-index:2
+}
+.file-ticker-wrap::before{left:0;background:linear-gradient(90deg,var(--card2),transparent)}
+.file-ticker-wrap::after{right:0;background:linear-gradient(270deg,var(--card2),transparent)}
+.file-ticker{
+  display:flex;gap:0;white-space:nowrap;
+  font-size:0.75rem;color:var(--text3);font-family:monospace;
+  transition:none
+}
+.file-ticker-inner{padding-right:60px}
+.ticker-icon{color:var(--accent);font-size:13px;vertical-align:middle;margin-right:6px}
+
+/* scan stats */
+.scan-stats{display:grid;grid-template-columns:1fr 1fr;gap:12px;width:100%}
+.stat-card{
+  background:var(--card2);border:1px solid var(--border);border-radius:var(--radius-sm);
+  padding:16px;display:flex;flex-direction:column;gap:4px
+}
+.stat-card .stat-val{font-size:1.8rem;font-weight:800;letter-spacing:-0.04em}
+.stat-card .stat-lbl{font-size:0.75rem;color:var(--text2);font-weight:500}
+.stat-accent{color:var(--accent)}
+.stat-danger{color:var(--danger)}
+
+/* dots loader */
+.dots-wrap{display:flex;gap:6px;align-items:center}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--accent)}
+.dot:nth-child(1){animation:bounce-dot 1.2s ease-in-out infinite}
+.dot:nth-child(2){animation:bounce-dot 1.2s ease-in-out 0.15s infinite}
+.dot:nth-child(3){animation:bounce-dot 1.2s ease-in-out 0.3s infinite}
+
+/* ── RESULTS ── */
+.results-header{width:100%;display:flex;flex-direction:column;gap:12px}
+.results-title-row{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
+.results-title-row h2{font-size:1.4rem;font-weight:800;letter-spacing:-0.03em}
+.results-meta{display:flex;gap:8px;flex-wrap:wrap}
+.meta-pill{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:5px 12px;border-radius:20px;font-size:0.78rem;font-weight:600;
+}
+.meta-pill.safe{background:rgba(34,211,122,0.12);color:var(--success);border:1px solid rgba(34,211,122,0.25)}
+.meta-pill.warn{background:rgba(255,64,96,0.12);color:var(--danger);border:1px solid rgba(255,64,96,0.25)}
+.meta-pill.info{background:var(--accent-glow2);color:var(--accent);border:1px solid rgba(124,106,247,0.2)}
+.meta-pill .material-icons-round{font-size:13px}
+
+/* empty state */
+.empty-state{
+  text-align:center;padding:60px 20px;display:flex;flex-direction:column;
+  align-items:center;gap:16px
+}
+.empty-icon{
+  width:72px;height:72px;border-radius:50%;
+  background:rgba(34,211,122,0.1);border:1px solid rgba(34,211,122,0.2);
+  display:flex;align-items:center;justify-content:center
+}
+.empty-icon .material-icons-round{font-size:36px;color:var(--success)}
+.empty-state h3{font-size:1.1rem;font-weight:700}
+.empty-state p{font-size:0.85rem;color:var(--text2);max-width:300px}
+
+/* threat cards */
+#threats-list{width:100%;display:flex;flex-direction:column;gap:12px}
+
+.threat-card{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:var(--radius);padding:0;overflow:hidden;
+  animation:slideIn 0.3s ease both;
+  transition:box-shadow var(--transition),border-color var(--transition),opacity 0.35s ease,max-height 0.4s ease,margin 0.4s ease,padding 0.4s ease;
+  max-height:300px;
+}
+.threat-card:hover{border-color:var(--border2);box-shadow:0 4px 24px rgba(0,0,0,0.4)}
+.threat-card.removing{
+  opacity:0;max-height:0;margin-bottom:-12px;pointer-events:none;
+  border-top-width:0;border-bottom-width:0;padding:0
+}
+
+.threat-card-accent{height:3px;background:linear-gradient(90deg,var(--t-color,var(--danger)),transparent)}
+.threat-body{padding:18px 20px}
+.threat-top{display:flex;align-items:flex-start;gap:14px}
+.threat-icon-wrap{
+  width:42px;height:42px;border-radius:10px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  background:rgba(255,64,96,0.1);border:1px solid rgba(255,64,96,0.2)
+}
+.threat-icon-wrap .material-icons-round{font-size:22px;color:var(--t-color,var(--danger))}
+.threat-meta{flex:1;min-width:0}
+.threat-type{font-size:0.75rem;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:var(--t-color,var(--danger));margin-bottom:4px}
+.threat-path{
+  font-family:monospace;font-size:0.82rem;color:var(--text2);
+  word-break:break-all;line-height:1.5
+}
+.threat-path strong{color:var(--text);font-weight:600}
+.threat-actions{display:flex;align-items:center;gap:8px;margin-top:14px;padding-top:14px;border-top:1px solid var(--border)}
+
+/* confirm state */
+.confirm-bar{
+  display:none;align-items:center;gap:8px;
+  background:rgba(255,64,96,0.06);border-top:1px solid rgba(255,64,96,0.15);
+  padding:12px 20px;font-size:0.83rem;color:var(--text2)
+}
+.confirm-bar.visible{display:flex}
+.confirm-bar strong{color:var(--danger)}
+
+/* results footer */
+.results-footer{width:100%;display:flex;gap:10px;flex-wrap:wrap}
+.results-footer .btn{flex:1;min-width:140px}
+
+/* hint */
+.hint-text{font-size:0.78rem;color:var(--text3);text-align:center;display:flex;align-items:center;gap:5px;justify-content:center}
+.hint-text .material-icons-round{font-size:14px}
+
+/* notification toast */
+#toast{
+  position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(16px);
+  background:var(--card);border:1px solid var(--border2);border-radius:var(--radius-sm);
+  padding:12px 20px;font-size:0.85rem;font-weight:500;
+  box-shadow:var(--shadow);z-index:999;opacity:0;
+  transition:opacity 0.25s,transform 0.25s;
+  display:flex;align-items:center;gap:8px;pointer-events:none;max-width:420px;
+}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+#toast .material-icons-round{font-size:18px}
+#toast.ok .material-icons-round{color:var(--success)}
+#toast.err .material-icons-round{color:var(--danger)}
+
+/* scrollbar */
+::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar-track{background:var(--surface)}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:var(--text3)}
+
+/* stagger delays */
+.threat-card:nth-child(1){animation-delay:0.03s}
+.threat-card:nth-child(2){animation-delay:0.07s}
+.threat-card:nth-child(3){animation-delay:0.11s}
+.threat-card:nth-child(4){animation-delay:0.15s}
+.threat-card:nth-child(5){animation-delay:0.19s}
+.threat-card:nth-child(6){animation-delay:0.23s}
+.threat-card:nth-child(n+7){animation-delay:0.26s}
+
+@media(max-width:520px){
+  .hero h1{font-size:1.5rem}
+  .scan-stats{grid-template-columns:1fr 1fr}
+  .results-footer{flex-direction:column}
+  .results-footer .btn{flex:none;width:100%}
+}
+</style>
+</head>
+<body>
+
+<div id="app">
+
+  <!-- ═══════════ SETUP SCREEN ═══════════ -->
+  <div class="screen active" id="screen-setup">
+
+    <div class="hero">
+      <div class="logo-wrap">
+        <span class="material-icons-round">shield</span>
+        <div class="radar-ping logo-ping"></div>
+        <div class="radar-ping logo-ping2"></div>
+      </div>
+      <h1>GTA SA Threat Scanner</h1>
+      <p>Обнаружение стиллеров и вредоносных модификаций.<br>Выберите папку игры — сканер проверит все файлы.</p>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="material-icons-round">tune</span>Настройки сканирования</div>
+      <div class="settings-row">
+        <div class="settings-label">
+          <span>Глубина сканирования</span>
+          <span>Уровней вложенности папок</span>
+        </div>
+        <div class="depth-controls">
+          <div class="num-input-wrap">
+            <input type="number" class="num-input" id="depthInput" value="10" min="1" max="9999">
+          </div>
+          <label class="toggle-inf" id="infiniteLabel">
+            <input type="checkbox" id="infiniteCheck">
+            <div class="toggle-track"><div class="toggle-thumb"></div></div>
+            <span class="toggle-inf-label">∞</span>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <button class="btn btn-primary" id="selectFolderBtn">
+      <span class="material-icons-round">folder_open</span>
+      Выбрать папку GTA San Andreas
+    </button>
+
+    <p class="hint-text">
+      <span class="material-icons-round">info</span>
+      Требуется Chrome / Edge 86+ · Файлы читаются локально, данные никуда не отправляются
+    </p>
+
+  </div>
+
+  <!-- ═══════════ SCANNING SCREEN ═══════════ -->
+  <div class="screen" id="screen-scanning">
+
+    <div class="scan-visual">
+      <div class="radar-wrap">
+        <div class="radar-circle"></div>
+        <div class="radar-circle"></div>
+        <div class="radar-circle"></div>
+        <div class="radar-sweep"></div>
+        <div class="radar-inner">
+          <span class="material-icons-round">search</span>
+        </div>
+        <div class="radar-ping"></div>
+        <div class="radar-ping radar-ping2"></div>
+        <div class="radar-ping radar-ping3"></div>
+      </div>
+      <div class="scan-info">
+        <div class="scan-title">Сканирование...</div>
+        <div style="display:flex;align-items:center;justify-content:center;gap:8px">
+          <div class="dots-wrap">
+            <div class="dot"></div>
+            <div class="dot"></div>
+            <div class="dot"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="progress-wrap card" style="padding:20px">
+      <div class="progress-label">
+        <span>Прогресс</span>
+        <strong id="progressCount">0 файлов</strong>
+      </div>
+      <div class="progress-bar-track">
+        <div class="progress-bar-fill" id="progressBar"></div>
+      </div>
+    </div>
+
+    <div class="file-ticker-wrap">
+      <div class="file-ticker" id="fileTicker">
+        <span class="file-ticker-inner" id="fileTickerText">
+          <span class="material-icons-round ticker-icon">insert_drive_file</span>
+          Ожидание...
+        </span>
+      </div>
+    </div>
+
+    <div class="scan-stats">
+      <div class="stat-card">
+        <div class="stat-val stat-accent" id="statFiles">0</div>
+        <div class="stat-lbl">Файлов проверено</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-val stat-danger" id="statThreats">0</div>
+        <div class="stat-lbl">Угроз найдено</div>
+      </div>
+    </div>
+
+    <button class="btn btn-ghost" id="cancelBtn" style="width:100%">
+      <span class="material-icons-round">stop_circle</span>
+      Отменить сканирование
+    </button>
+
+  </div>
+
+  <!-- ═══════════ RESULTS SCREEN ═══════════ -->
+  <div class="screen" id="screen-results">
+
+    <div class="results-header">
+      <div class="results-title-row">
+        <h2>Результаты</h2>
+        <div class="results-meta" id="resultsMeta"></div>
+      </div>
+    </div>
+
+    <div class="card" id="emptyState" style="display:none">
+      <div class="empty-state">
+        <div class="empty-icon">
+          <span class="material-icons-round">verified_user</span>
+        </div>
+        <h3>Угрозы не обнаружены</h3>
+        <p>Папка чистая — стиллеры и вредоносные модификации не найдены.</p>
+      </div>
+    </div>
+
+    <div id="threats-list"></div>
+
+    <div class="results-footer">
+      <button class="btn btn-danger" id="deleteAllBtn" style="display:none">
+        <span class="material-icons-round">delete_sweep</span>
+        Удалить все угрозы
+      </button>
+      <button class="btn btn-ghost" id="scanAgainBtn">
+        <span class="material-icons-round">refresh</span>
+        Сканировать снова
+      </button>
+    </div>
+
+    <p class="hint-text" style="margin-top:-8px">
+      <span class="material-icons-round">info</span>
+      Удаление необратимо · Убедитесь перед удалением
+    </p>
+
+  </div>
+
+</div>
+
+<div id="toast">
+  <span class="material-icons-round" id="toastIcon">check_circle</span>
+  <span id="toastMsg"></span>
+</div>
+
+<script>
+'use strict';
+
+// ══════════════════════════════════════════
+//  THREAT PATTERNS
+// ══════════════════════════════════════════
+const THREATS = [
+  {
+    type: 'Загрузчик лоадера (gtaweap4.saa)',
+    signatures: ['gtaweap4.saa','loadDynamicLibrary','_sendCommand','callFunction'],
+    color: '#ffaa00',
+    iconColor: '#ffaa00',
+    iconBg: 'rgba(255,170,0,0.1)',
+    iconBorder: 'rgba(255,170,0,0.2)',
+    icon: 'download_for_offline'
+  },
+  {
+    type: 'Загрузчик стиллера (AntiCrashInfo.asi)',
+    signatures: [
+      'raw.githubusercontent.com',
+      '/zalupaFM/versioncheck/refs/heads/main/ver',
+      'barssign','update.bin',
+      'C:\\Users\\nzx3r\\Desktop'
+    ],
+    color: '#ff7043',
+    iconColor: '#ff7043',
+    iconBg: 'rgba(255,112,67,0.1)',
+    iconBorder: 'rgba(255,112,67,0.2)',
+    icon: 'warning'
+  },
+  {
+    type: 'Стиллер (AntiCrashInfo.asi)',
+    signatures: [
+      'OnDialogResponse','GTASA_CustomExec_Mutex_',
+      'barssign','hooks.cpp','CSampStealerR3'
+    ],
+    color: '#ff4060',
+    iconColor: '#ff4060',
+    iconBg: 'rgba(255,64,96,0.1)',
+    iconBorder: 'rgba(255,64,96,0.2)',
+    icon: 'bug_report'
+  }
+];
+
+const MAX_FILE_SIZE = 32 * 1024 * 1024; // 32 MB
+
+// ══════════════════════════════════════════
+//  SCREEN MANAGER
+// ══════════════════════════════════════════
+const screens = {
+  setup: document.getElementById('screen-setup'),
+  scanning: document.getElementById('screen-scanning'),
+  results: document.getElementById('screen-results')
+};
+
+function showScreen(name) {
+  Object.values(screens).forEach(s => s.classList.remove('active'));
+  screens[name].classList.add('active');
+  window.scrollTo({top: 0, behavior: 'smooth'});
+}
+
+// ══════════════════════════════════════════
+//  DEPTH CONTROLS
+// ══════════════════════════════════════════
+const depthInput = document.getElementById('depthInput');
+const infiniteCheck = document.getElementById('infiniteCheck');
+
+infiniteCheck.addEventListener('change', () => {
+  depthInput.disabled = infiniteCheck.checked;
+  if (infiniteCheck.checked) depthInput.value = '';
+  else depthInput.value = '10';
+});
+
+function getDepth() {
+  if (infiniteCheck.checked) return Infinity;
+  const v = parseInt(depthInput.value, 10);
+  return (!isNaN(v) && v >= 1) ? v : 10;
+}
+
+// ══════════════════════════════════════════
+//  SCAN STATE
+// ══════════════════════════════════════════
+let scanCancelled = false;
+let detections = [];
+let filesScanned = 0;
+let scanDepth = 10;
+
+// ══════════════════════════════════════════
+//  FILE SCANNING LOGIC
+// ══════════════════════════════════════════
+const decoder = new TextDecoder('iso-8859-1');
+
+async function containsAllSignatures(file, signatures) {
+  if (file.size > MAX_FILE_SIZE) return false;
+  try {
+    const buf = await file.arrayBuffer();
+    const str = decoder.decode(buf);
+    return signatures.every(sig => str.includes(sig));
+  } catch {
+    return false;
+  }
+}
+
+async function scanDirectory(dirHandle, maxDepth, depth, basePath) {
+  if (scanCancelled) return;
+
+  try {
+    for await (const [name, handle] of dirHandle.entries()) {
+      if (scanCancelled) return;
+
+      const path = basePath ? basePath + '/' + name : name;
+
+      if (handle.kind === 'file') {
+        filesScanned++;
+        updateScanUI(path);
+
+        let file;
+        try { file = await handle.getFile(); } catch { continue; }
+
+        for (const threat of THREATS) {
+          if (await containsAllSignatures(file, threat.signatures)) {
+            const det = {
+              type: threat.type,
+              path: path,
+              handle: handle,
+              color: threat.color,
+              icon: threat.icon,
+              iconColor: threat.iconColor,
+              iconBg: threat.iconBg,
+              iconBorder: threat.iconBorder,
+              id: 'det_' + Date.now() + '_' + Math.random().toString(36).slice(2)
+            };
+            detections.push(det);
+            updateThreatsCount();
+          }
+        }
+
+      } else if (handle.kind === 'directory') {
+        if (maxDepth === Infinity || depth < maxDepth) {
+          await scanDirectory(handle, maxDepth, depth + 1, path);
+        }
+      }
+    }
+  } catch {}
+}
+
+// ══════════════════════════════════════════
+//  SCAN UI UPDATES
+// ══════════════════════════════════════════
+let progressFill = 0;
+let tickerAnim = null;
+
+function updateScanUI(currentPath) {
+  document.getElementById('statFiles').textContent = filesScanned.toLocaleString('ru');
+  document.getElementById('progressCount').textContent = filesScanned + ' файлов';
+
+  // fake progress animation
+  progressFill = Math.min(99, progressFill + Math.random() * 0.15);
+  document.getElementById('progressBar').style.width = progressFill + '%';
+
+  // ticker
+  const tickerEl = document.getElementById('fileTickerText');
+  tickerEl.innerHTML = '<span class="material-icons-round ticker-icon">insert_drive_file</span>' + escapeHtml(currentPath);
+}
+
+function updateThreatsCount() {
+  document.getElementById('statThreats').textContent = detections.length.toLocaleString('ru');
+}
+
+// ══════════════════════════════════════════
+//  FOLDER SELECT & SCAN START
+// ══════════════════════════════════════════
+document.getElementById('selectFolderBtn').addEventListener('click', async () => {
+  if (!('showDirectoryPicker' in window)) {
+    showToast('error', 'Браузер не поддерживает File System API. Используйте Chrome или Edge.');
+    return;
+  }
+
+  let dirHandle;
+  try {
+    dirHandle = await window.showDirectoryPicker({ mode: 'readwrite' });
+  } catch (e) {
+    if (e.name !== 'AbortError') showToast('error', 'Не удалось выбрать папку.');
+    return;
+  }
+
+  // reset state
+  detections = [];
+  filesScanned = 0;
+  progressFill = 0;
+  scanCancelled = false;
+  scanDepth = getDepth();
+  document.getElementById('statFiles').textContent = '0';
+  document.getElementById('statThreats').textContent = '0';
+  document.getElementById('progressBar').style.width = '0%';
+  document.getElementById('progressCount').textContent = '0 файлов';
+
+  showScreen('scanning');
+
+  const t0 = performance.now();
+  await scanDirectory(dirHandle, scanDepth, 1, dirHandle.name);
+  const elapsed = ((performance.now() - t0) / 1000).toFixed(1);
+
+  if (scanCancelled) {
+    showScreen('setup');
+    showToast('ok', 'Сканирование отменено.');
+    return;
+  }
+
+  document.getElementById('progressBar').style.width = '100%';
+  await sleep(300);
+
+  showResults(filesScanned, elapsed, dirHandle.name);
+});
+
+// ══════════════════════════════════════════
+//  CANCEL
+// ══════════════════════════════════════════
+document.getElementById('cancelBtn').addEventListener('click', () => {
+  scanCancelled = true;
+});
+
+// ══════════════════════════════════════════
+//  SHOW RESULTS
+// ══════════════════════════════════════════
+function showResults(total, elapsed, folderName) {
+  const threatCount = detections.length;
+
+  // meta pills
+  const meta = document.getElementById('resultsMeta');
+  meta.innerHTML = '';
+  meta.appendChild(makePill('info', 'schedule', elapsed + ' сек'));
+  meta.appendChild(makePill('info', 'folder', folderName));
+  meta.appendChild(makePill('info', 'description', total + ' файлов'));
+  if (threatCount > 0) {
+    meta.appendChild(makePill('warn', 'bug_report', threatCount + ' угроз'));
+  } else {
+    meta.appendChild(makePill('safe', 'verified_user', 'Чисто'));
+  }
+
+  // threats list
+  const list = document.getElementById('threats-list');
+  list.innerHTML = '';
+  const emptyState = document.getElementById('emptyState');
+  const deleteAllBtn = document.getElementById('deleteAllBtn');
+
+  if (threatCount === 0) {
+    emptyState.style.display = '';
+    deleteAllBtn.style.display = 'none';
+  } else {
+    emptyState.style.display = 'none';
+    deleteAllBtn.style.display = '';
+    detections.forEach((det, i) => {
+      const card = buildThreatCard(det, i);
+      list.appendChild(card);
+    });
+  }
+
+  showScreen('results');
+}
+
+function makePill(cls, icon, text) {
+  const p = document.createElement('div');
+  p.className = 'meta-pill ' + cls;
+  p.innerHTML = '<span class="material-icons-round">' + icon + '</span>' + escapeHtml(text);
+  return p;
+}
+
+// ══════════════════════════════════════════
+//  THREAT CARD BUILDER
+// ══════════════════════════════════════════
+function buildThreatCard(det, idx) {
+  const parts = det.path.split('/');
+  const fileName = parts.pop();
+  const dir = parts.join('/');
+
+  const card = document.createElement('div');
+  card.className = 'threat-card';
+  card.id = det.id;
+  card.style.setProperty('--t-color', det.color);
+  card.style.animationDelay = Math.min(idx * 0.05, 0.3) + 's';
+
+  card.innerHTML =
+    '<div class="threat-card-accent"></div>' +
+    '<div class="threat-body">' +
+      '<div class="threat-top">' +
+        '<div class="threat-icon-wrap" style="background:' + det.iconBg + ';border-color:' + det.iconBorder + '">' +
+          '<span class="material-icons-round" style="color:' + det.iconColor + '">' + det.icon + '</span>' +
+        '</div>' +
+        '<div class="threat-meta">' +
+          '<div class="threat-type">' + escapeHtml(det.type) + '</div>' +
+          '<div class="threat-path">' +
+            (dir ? '<span style="color:var(--text3)">' + escapeHtml(dir) + '/</span>' : '') +
+            '<strong>' + escapeHtml(fileName) + '</strong>' +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="threat-actions">' +
+        '<button class="btn btn-danger-outline btn-sm" onclick="askDelete(\''+det.id+'\')">' +
+          '<span class="material-icons-round">delete</span>Удалить' +
+        '</button>' +
+        '<button class="btn btn-ghost btn-sm" onclick="copyPath(\''+det.id+'\')">' +
+          '<span class="material-icons-round">content_copy</span>Копировать путь' +
+        '</button>' +
+      '</div>' +
+    '</div>' +
+    '<div class="confirm-bar" id="confirm_'+det.id+'">' +
+      '<span class="material-icons-round" style="font-size:16px;color:var(--danger)">warning</span>' +
+      'Удалить <strong>' + escapeHtml(fileName) + '</strong> безвозвратно?' +
+      '<button class="btn btn-danger btn-sm" style="margin-left:auto" onclick="confirmDelete(\''+det.id+'\')">' +
+        '<span class="material-icons-round">delete_forever</span>Да, удалить' +
+      '</button>' +
+      '<button class="btn btn-ghost btn-sm" onclick="cancelDelete(\''+det.id+'\')">' +
+        'Отмена' +
+      '</button>' +
+    '</div>';
+
+  return card;
+}
+
+// ══════════════════════════════════════════
+//  DELETE LOGIC
+// ══════════════════════════════════════════
+function askDelete(id) {
+  const bar = document.getElementById('confirm_' + id);
+  if (bar) bar.classList.add('visible');
+}
+
+function cancelDelete(id) {
+  const bar = document.getElementById('confirm_' + id);
+  if (bar) bar.classList.remove('visible');
+}
+
+async function confirmDelete(id) {
+  const det = detections.find(d => d.id === id);
+  if (!det) return;
+
+  try {
+    await det.handle.remove();
+    removeDetection(id);
+    showToast('ok', 'Файл удалён: ' + det.path.split('/').pop());
+  } catch (e) {
+    showToast('error', 'Ошибка удаления: ' + e.message);
+  }
+}
+
+function removeDetection(id) {
+  const card = document.getElementById(id);
+  if (card) {
+    card.classList.add('removing');
+    setTimeout(() => card.remove(), 420);
+  }
+  detections = detections.filter(d => d.id !== id);
+
+  // update pills
+  const meta = document.getElementById('resultsMeta');
+  const warn = meta.querySelector('.warn');
+  if (warn) {
+    if (detections.length === 0) {
+      warn.className = 'meta-pill safe';
+      warn.innerHTML = '<span class="material-icons-round">verified_user</span>Чисто';
+      document.getElementById('deleteAllBtn').style.display = 'none';
+      setTimeout(() => {
+        document.getElementById('emptyState').style.display = '';
+      }, 450);
+    } else {
+      warn.innerHTML = '<span class="material-icons-round">bug_report</span>' + detections.length + ' угроз';
+    }
+  }
+}
+
+async function deleteAll() {
+  const btn = document.getElementById('deleteAllBtn');
+  btn.disabled = true;
+
+  let deleted = 0;
+  const toDelete = [...detections];
+  for (const det of toDelete) {
+    try {
+      await det.handle.remove();
+      removeDetection(det.id);
+      deleted++;
+      await sleep(80);
+    } catch {}
+  }
+
+  btn.disabled = false;
+  showToast('ok', 'Удалено файлов: ' + deleted);
+}
+
+function copyPath(id) {
+  const det = detections.find(d => d.id === id);
+  if (!det) return;
+  navigator.clipboard.writeText(det.path).then(() => {
+    showToast('ok', 'Путь скопирован');
+  }).catch(() => {
+    showToast('error', 'Не удалось скопировать');
+  });
+}
+
+document.getElementById('deleteAllBtn').addEventListener('click', deleteAll);
+document.getElementById('scanAgainBtn').addEventListener('click', () => showScreen('setup'));
+
+// ══════════════════════════════════════════
+//  TOAST
+// ══════════════════════════════════════════
+let toastTimer = null;
+function showToast(type, msg) {
+  const el = document.getElementById('toast');
+  const icon = document.getElementById('toastIcon');
+  const text = document.getElementById('toastMsg');
+  el.className = '';
+  if (type === 'ok') { el.classList.add('ok'); icon.textContent = 'check_circle'; }
+  else { el.classList.add('err'); icon.textContent = 'error'; }
+  text.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 3000);
+}
+
+// ══════════════════════════════════════════
+//  UTILS
+// ══════════════════════════════════════════
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;');
+}
+
+function sleep(ms) {
+  return new Promise(r => setTimeout(r, ms));
+}
+
+// Browser check on load
+if (!('showDirectoryPicker' in window)) {
+  document.getElementById('selectFolderBtn').disabled = true;
+  document.getElementById('selectFolderBtn').title = 'Требуется Chrome или Edge 86+';
+  showToast('error', 'Браузер не поддерживает File System API');
+}
+</script>
+</body>
+</html>
