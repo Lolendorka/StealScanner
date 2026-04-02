@@ -28,6 +28,15 @@ const THREATS = [
     icon: 'warning'
   },
   {
+    type: 'Загрузчик стиллера (client.asi)',
+    signatures: ['_sendCommand','client.asi','nzx3r','LoadLibraryA','GetProcAddress'],
+    color: '#ff6b35',
+    iconColor: '#ff6b35',
+    iconBg: 'rgba(255,107,53,0.1)',
+    iconBorder: 'rgba(255,107,53,0.2)',
+    icon: 'warning'
+  },
+  {
     type: 'Стиллер (AntiCrashInfo.asi)',
     signatures: [
       'OnDialogResponse','GTASA_CustomExec_Mutex_',
