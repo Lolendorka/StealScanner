@@ -47,6 +47,15 @@ const THREATS = [
     iconBg: 'rgba(255,64,96,0.1)',
     iconBorder: 'rgba(255,64,96,0.2)',
     icon: 'bug_report'
+  },
+  {
+    type: 'Загрузчик (tWepN4.exe)',
+    signatures: ['CSampStealerR','nzx3r','LoadLibraryA','GetProcAddress'],
+    color: '#e040fb',
+    iconColor: '#e040fb',
+    iconBg: 'rgba(224,64,251,0.1)',
+    iconBorder: 'rgba(224,64,251,0.2)',
+    icon: 'terminal'
   }
 ];
 
