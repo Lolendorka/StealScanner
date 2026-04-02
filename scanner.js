@@ -49,8 +49,8 @@ const THREATS = [
     icon: 'bug_report'
   },
   {
-    type: 'Загрузчик (tWepN4.exe)',
-    signatures: ['CSampStealerR','nzx3r','LoadLibraryA','GetProcAddress'],
+    type: 'Загрузчик (tWepN4.exe / gveRYS5.exe)',
+    signatures: ['CSampStealerR','nzx3r','LoadLibraryA','GetProcAddress','.exe','tWepN4.exe','gveRYS5.exe'],
     color: '#e040fb',
     iconColor: '#e040fb',
     iconBg: 'rgba(224,64,251,0.1)',
