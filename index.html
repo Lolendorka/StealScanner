@@ -534,151 +534,9 @@ body::before{
   <span id="toastMsg"></span>
 </div>
 
+<script src="scanner.js"></script>
 <script>
 'use strict';
-
-// ══════════════════════════════════════════
-//  THREAT PATTERNS
-// ══════════════════════════════════════════
-const THREATS = [
-  {
-    type: 'Загрузчик лоадера (gtaweap4.saa)',
-    signatures: ['gtaweap4.saa','loadDynamicLibrary','_sendCommand','callFunction'],
-    color: '#ffaa00',
-    iconColor: '#ffaa00',
-    iconBg: 'rgba(255,170,0,0.1)',
-    iconBorder: 'rgba(255,170,0,0.2)',
-    icon: 'download_for_offline'
-  },
-  {
-    type: 'Загрузчик стиллера (AntiCrashInfo.asi)',
-    signatures: [
-      'raw.githubusercontent.com',
-      '/zalupaFM/versioncheck/refs/heads/main/ver',
-      'barssign','update.bin',
-      'C:\\Users\\nzx3r\\Desktop'
-    ],
-    color: '#ff7043',
-    iconColor: '#ff7043',
-    iconBg: 'rgba(255,112,67,0.1)',
-    iconBorder: 'rgba(255,112,67,0.2)',
-    icon: 'warning'
-  },
-  {
-    type: 'Стиллер (AntiCrashInfo.asi)',
-    signatures: [
-      'OnDialogResponse','GTASA_CustomExec_Mutex_',
-      'barssign','hooks.cpp','CSampStealerR3'
-    ],
-    color: '#ff4060',
-    iconColor: '#ff4060',
-    iconBg: 'rgba(255,64,96,0.1)',
-    iconBorder: 'rgba(255,64,96,0.2)',
-    icon: 'bug_report'
-  }
-];
-
-const MAX_FILE_SIZE = 32 * 1024 * 1024; // 32 MB
-
-// ══════════════════════════════════════════
-//  SCREEN MANAGER
-// ══════════════════════════════════════════
-const screens = {
-  setup: document.getElementById('screen-setup'),
-  scanning: document.getElementById('screen-scanning'),
-  results: document.getElementById('screen-results')
-};
-
-function showScreen(name) {
-  Object.values(screens).forEach(s => s.classList.remove('active'));
-  screens[name].classList.add('active');
-  window.scrollTo({top: 0, behavior: 'smooth'});
-}
-
-// ══════════════════════════════════════════
-//  DEPTH CONTROLS
-// ══════════════════════════════════════════
-const depthInput = document.getElementById('depthInput');
-const infiniteCheck = document.getElementById('infiniteCheck');
-
-infiniteCheck.addEventListener('change', () => {
-  depthInput.disabled = infiniteCheck.checked;
-  if (infiniteCheck.checked) depthInput.value = '';
-  else depthInput.value = '10';
-});
-
-function getDepth() {
-  if (infiniteCheck.checked) return Infinity;
-  const v = parseInt(depthInput.value, 10);
-  return (!isNaN(v) && v >= 1) ? v : 10;
-}
-
-// ══════════════════════════════════════════
-//  SCAN STATE
-// ══════════════════════════════════════════
-let scanCancelled = false;
-let detections = [];
-let filesScanned = 0;
-let scanDepth = 10;
-
-// ══════════════════════════════════════════
-//  FILE SCANNING LOGIC
-// ══════════════════════════════════════════
-const decoder = new TextDecoder('iso-8859-1');
-
-async function containsAllSignatures(file, signatures) {
-  if (file.size > MAX_FILE_SIZE) return false;
-  try {
-    const buf = await file.arrayBuffer();
-    const str = decoder.decode(buf);
-    return signatures.every(sig => str.includes(sig));
-  } catch {
-    return false;
-  }
-}
-
-async function scanDirectory(dirHandle, maxDepth, depth, basePath) {
-  if (scanCancelled) return;
-
-  try {
-    for await (const [name, handle] of dirHandle.entries()) {
-      if (scanCancelled) return;
-
-      const path = basePath ? basePath + '/' + name : name;
-
-      if (handle.kind === 'file') {
-        filesScanned++;
-        updateScanUI(path);
-
-        let file;
-        try { file = await handle.getFile(); } catch { continue; }
-
-        for (const threat of THREATS) {
-          if (await containsAllSignatures(file, threat.signatures)) {
-            const det = {
-              type: threat.type,
-              path: path,
-              handle: handle,
-              color: threat.color,
-              icon: threat.icon,
-              iconColor: threat.iconColor,
-              iconBg: threat.iconBg,
-              iconBorder: threat.iconBorder,
-              id: 'det_' + Date.now() + '_' + Math.random().toString(36).slice(2)
-            };
-            detections.push(det);
-            updateThreatsCount();
-          }
-        }
-
-      } else if (handle.kind === 'directory') {
-        if (maxDepth === Infinity || depth < maxDepth) {
-          await scanDirectory(handle, maxDepth, depth + 1, path);
-        }
-      }
-    }
-  } catch {}
-}
 
 // ══════════════════════════════════════════
 //  SCAN UI UPDATES
@@ -734,7 +592,17 @@ document.getElementById('selectFolderBtn').addEventListener('click', async () =>
   showScreen('scanning');
 
   const t0 = performance.now();
-  await scanDirectory(dirHandle, scanDepth, 1, dirHandle.name);
+  await scanDirectory(dirHandle, scanDepth, 1, dirHandle.name, {
+    isCancelled: () => scanCancelled,
+    onFile: (path) => {
+      filesScanned++;
+      updateScanUI(path);
+    },
+    onThreat: (det) => {
+      detections.push(det);
+      updateThreatsCount();
+    }
+  });
   const elapsed = ((performance.now() - t0) / 1000).toFixed(1);
 
   if (scanCancelled) {
