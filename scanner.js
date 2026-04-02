@@ -103,6 +103,8 @@ async function scanDirectory(dirHandle, maxDepth, depth, basePath, options) {
               type: threat.type,
               path: path,
               handle: handle,
+              size: file.size,
+              lastModified: file.lastModified,
               color: threat.color,
               icon: threat.icon,
               iconColor: threat.iconColor,
