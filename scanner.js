@@ -41,8 +41,6 @@ const THREATS = [
   }
 ];
 
-const MAX_FILE_SIZE = 32 * 1024 * 1024; // 32 MB
-
 // ══════════════════════════════════════════
 //  CORE LOGIC
 // ══════════════════════════════════════════
@@ -52,8 +50,8 @@ const _decoder = new TextDecoder('iso-8859-1');
  * Checks whether ALL signatures of a threat are present in the file.
  * Reads the file as latin-1 bytes so binary content is preserved 1:1.
  */
-async function containsAllSignatures(file, signatures) {
-  if (file.size > MAX_FILE_SIZE) return false;
+async function containsAllSignatures(file, signatures, maxFileSize) {
+  if (maxFileSize !== Infinity && file.size > maxFileSize) return false;
   try {
     const buf = await file.arrayBuffer();
     const str = _decoder.decode(buf);
@@ -91,7 +89,7 @@ async function scanDirectory(dirHandle, maxDepth, depth, basePath, options) {
         try { file = await handle.getFile(); } catch { continue; }
 
         for (const threat of THREATS) {
-          if (await containsAllSignatures(file, threat.signatures)) {
+          if (await containsAllSignatures(file, threat.signatures, options.maxFileSize ?? Infinity)) {
             options.onThreat({
               type: threat.type,
               path: path,
