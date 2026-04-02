@@ -738,8 +738,14 @@ document.getElementById('selectFolderBtn').addEventListener('click', async () =>
   const elapsed = ((performance.now() - t0) / 1000).toFixed(1);
 
   if (scanCancelled) {
-    showScreen('setup');
-    showToast('ok', 'Сканирование отменено.');
+    if (detections.length > 0) {
+      document.getElementById('progressBar').style.width = '100%';
+      showResults(filesScanned, ((performance.now() - t0) / 1000).toFixed(1), dirHandle.name);
+      showToast('ok', 'Отменено — показаны частичные результаты (' + detections.length + ' угроз)');
+    } else {
+      showScreen('setup');
+      showToast('ok', 'Сканирование отменено.');
+    }
     return;
   }
 
